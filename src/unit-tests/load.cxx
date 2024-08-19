@@ -4,10 +4,10 @@
 
 void test_load()
 {
-    auto data = CP::load_cplib<double>("../Modularity/karate.txt");
+    auto data = CP::load_cplib<double>("../data/example-from-paper.txt");
 
-    assert (data.first == 34);
-    assert (data.second.size() == 561);
+    assert (data.first == 6);
+    assert (data.second.size() == 15);
 }
 
 

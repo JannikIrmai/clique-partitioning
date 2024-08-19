@@ -9,7 +9,7 @@ void test_callback()
     std::vector<double> edge_values = {0.5, 0.5, 0.5, 0, 0, 0};
     EPM edge_value_map(4, edge_values);
 
-    CP::Callback<EPM> callback(4);
+    CP::SeparatorCallback<EPM> callback(4);
     callback.add_separator("Triangle", 0);
     callback.add_separator("OddWheel", 1);
 

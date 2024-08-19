@@ -434,7 +434,7 @@ public:
     }
 
     // return a reference to the separator callback (e.g. for adding additional separation routines)
-    Callback<EPM>& separator_callback()
+    SeparatorCallback<EPM>& separator_callback()
     {
         return separator_callback_;
     }
@@ -532,7 +532,7 @@ private:
     EPM best_integer_solution_map_;
 
 
-    Callback<EPM> separator_callback_;  // separator callback to separate fractional solution
+    SeparatorCallback<EPM> separator_callback_;  // separator callback to separate fractional solution
     
     // time limits
     float_time_point optimization_start_time_;
@@ -864,7 +864,6 @@ private:
         log_lp_time_.push_back(lp_time_);
         log_explored_node_count_.push_back(explored_node_count_);
     }
-
 };
 
 } // namespace CP

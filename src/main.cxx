@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
     lp.max_tail_length = 1000;
     lp.tail_threshold = 1;
     lp.separator_callback().add_separator<CP::TriangleSeparator<LP::EPM>>(0);
-    lp.separator_callback().add_separator<CP::OddWheelSeparator<LP::EPM>>(1);
+    // lp.separator_callback().add_separator<CP::OddWheelSeparator<LP::EPM>>(1);
     lp.verbosity = 2;
 
     lp.add_triangle_inequalities_based_on_negative_cost();
@@ -31,8 +31,11 @@ int main(int argc, char* argv[])
 
     lp.optimize();
 
-    std::cout << "upper bound = " << lp.bound() << "\n";
+    std::cout << "upper bound = " << std::setprecision(10) << lp.bound() << "\n";
     std::cout << "best integer feasible objective = " << lp.best_objective() << "\n";
+
+    std::ofstream results_file("results.txt");
+    lp.print_solution(results_file);
 
     return 0;
 }
