@@ -9,6 +9,10 @@
 
 namespace CP {
 
+/**
+ * This algorithm is a kernigan lin style greedy moving algorithm for the clique partitioning problem
+ * 
+*/ 
 template<typename EDGE_COST_MAP>
 typename EDGE_COST_MAP::VALUE_TYPE kernighanLin(EDGE_COST_MAP edge_costs, std::vector<size_t>& vertex_labels, bool verbose = false)
 {
@@ -166,15 +170,14 @@ typename EDGE_COST_MAP::VALUE_TYPE kernighanLin(EDGE_COST_MAP edge_costs, std::v
         return 0;
     };
 
-    // TODO: Rename energy to cost
     // TODO: Rename decrease to increase
-    COST_TYPE starting_energy = 0;
+    COST_TYPE starting_cost = 0;
 
     for(size_t i = 0; i < n; ++i)
     for(size_t j = i+1; j < n; ++j)
     {
         if (vertex_labels[i] == vertex_labels[j])
-            starting_energy += edge_costs(i, j);
+            starting_cost += edge_costs(i, j);
     }
 
     size_t numberOfComponents = *std::max_element(vertex_labels.begin(), vertex_labels.end()) + 1;
@@ -185,37 +188,29 @@ typename EDGE_COST_MAP::VALUE_TYPE kernighanLin(EDGE_COST_MAP edge_costs, std::v
     for (size_t i = 0; i < n; ++i)
         partitions[vertex_labels[i]].push_back(i);
 
-    if (verbose)
-    {
-        std::cout << "Starting energy: " << starting_energy << std::endl;
-        std::cout << std::setw(4) << "Iter" << std::setw(16) << "Total decrease" << std::setw(15) << "Pair updates" << std::setw(15) << "New sets" << std::setw(15) << "Num. of sets\n";
-    }
-
-    // interatively update bipartition in order to minimize the total cost of the multicut
+    // iteratively update bipartition in order to minimize the total cost of the multicut
     size_t iter = 0;
     while (true)
     {
         ++iter;
-        COST_TYPE energy_decrease = 0;
+        COST_TYPE cost_increase = 0;
 
         // update pairs of partitions
         for (size_t i = 0; i < partitions.size() - 1; ++i)
             for (auto j = i + 1; j < partitions.size(); ++j)
                 if (!partitions[j].empty())
-                    energy_decrease += update_bipartition(partitions[i], partitions[j]);
+                    cost_increase += update_bipartition(partitions[i], partitions[j]);
 
         // remove partitions that became empty after the previous step
         auto new_end = std::partition(partitions.begin(), partitions.end(), [](const std::vector<size_t>& s) { return !s.empty(); });
         partitions.resize(new_end - partitions.begin());
-
-        COST_TYPE ee = energy_decrease;
 
         // try to introduce new partitions
         for (size_t i = 0, p_size = partitions.size(); i < p_size; ++i)       
             while (1)
             {
                 std::vector<size_t> new_set;
-                energy_decrease += update_bipartition(partitions[i], new_set);
+                cost_increase += update_bipartition(partitions[i], new_set);
 
                 if (!new_set.empty())
                     partitions.emplace_back(std::move(new_set));
@@ -223,31 +218,31 @@ typename EDGE_COST_MAP::VALUE_TYPE kernighanLin(EDGE_COST_MAP edge_costs, std::v
                     break;
             }
 
-        if (energy_decrease == 0)
+        if (cost_increase == 0)
             break;
 
-        starting_energy += energy_decrease;
+        starting_cost += cost_increase;
 
-        if (verbose)
-            std::cout << std::setw(4) << iter+1 << std::setw(16) << energy_decrease << std::setw(15) << ee << std::setw(15) << (energy_decrease - ee) << std::setw(14) << partitions.size() << std::endl;
     }
 
     for (size_t i = 0; i < partitions.size(); ++i)
         for (size_t j = 0; j < partitions[i].size(); ++j)
             vertex_labels[partitions[i][j]] = i;
 
-    COST_TYPE final_cost = 0;
-    for(size_t i = 0; i < n; ++i)
-    for(size_t j = i+1; j < n; ++j)
-    {
-        if (vertex_labels[i] == vertex_labels[j])
-            final_cost += edge_costs(i, j);
-    }
+    #ifdef DEBUG
+        COST_TYPE final_cost = 0;
+        for(size_t i = 0; i < n; ++i)
+        for(size_t j = i+1; j < n; ++j)
+        {
+            if (vertex_labels[i] == vertex_labels[j])
+                final_cost += edge_costs(i, j);
+        }
 
-    if (final_cost != starting_energy)
-        throw std::runtime_error("Wrong final cost.");
+        if (final_cost != starting_cost)
+            throw std::runtime_error("Wrong final cost.");
+    #endif
 
-    return starting_energy;
+    return starting_cost;
 
 }
 
