@@ -14,7 +14,7 @@ namespace CP {
  * 
 */ 
 template<typename EDGE_COST_MAP>
-typename EDGE_COST_MAP::VALUE_TYPE kernighanLin(EDGE_COST_MAP edge_costs, std::vector<size_t>& vertex_labels, bool verbose = false)
+typename EDGE_COST_MAP::VALUE_TYPE kernighanLin(const EDGE_COST_MAP& edge_costs, std::vector<size_t>& vertex_labels, bool verbose = false)
 {
     typedef typename EDGE_COST_MAP::VALUE_TYPE COST_TYPE;
 

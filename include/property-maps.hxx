@@ -32,12 +32,6 @@ public:
         assert (data.size() == n*(n-1)/2);
     }
 
-    template<class OTHER>
-    EdgePropertyMap(const OTHER& other) :
-        n_(other.n()),
-        data_(other.data())
-    {}
-
     VALUE_TYPE operator()(size_t i, size_t j) const
     {
         size_t idx = edge2idx_(i, j);
@@ -54,12 +48,6 @@ public:
     {
         return n_;
     }
-
-    const std::vector<VALUE_TYPE>& data() const
-    {
-        return data;
-    }
-
 
 private:
     const size_t n_;
