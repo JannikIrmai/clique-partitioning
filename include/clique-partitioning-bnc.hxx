@@ -16,10 +16,19 @@
 namespace CP {
 
 
-// branching stuff
+/**
+ * Node of the branch tree of a branch and cut algorithm.
+ * It consists of an LP, pointers to its parent and children 
+ * in the branch tree as well as some meta information like
+ * i, j, value that describes which edge {i, j} was fixed
+ * to which value or the depth of the node within the tree
+ */
 struct BranchNode
 {
+    // Constructs a new node with an empty LP
     BranchNode(GRBEnv env) : BranchNode(GRBModel(env)) {}
+
+    // Construct a new branch node by copying an existing LP
     BranchNode(GRBModel m) : model(m) 
     {
         // set num-non-basic-iterations
@@ -34,11 +43,15 @@ struct BranchNode
             constraints_.push_back(constraint);
         }
     }
+
+    // Destructor destructs all children of the branch node and node itself
     ~BranchNode()
     {
         delete_children();
     }
 
+    // Set the bound of the branch node and propagate this information to its parent:
+    // The bound of the parent is the maximum of the bound of its two children.
     void set_bound(double new_bound)
     {
         assert (new_bound <= bound);
@@ -52,6 +65,7 @@ struct BranchNode
         bound = new_bound;
     }
 
+    // delete the children of the branch node
     void delete_children()
     {
         if (child0)
@@ -66,6 +80,7 @@ struct BranchNode
         }
     }
 
+    // The number of (recursive) children of this node (including the node itself)
     size_t size()
     {
         size_t s = 1;
@@ -76,7 +91,8 @@ struct BranchNode
         return s;
     }
 
-
+    // Creates two children of this branch node.
+    // Both children are initialized with a copy of the LP of this branch node
     void create_children()
     {
         if (child0 || child1)
@@ -119,11 +135,14 @@ struct BranchNode
     std::list<size_t> num_non_basic_iterations_;
     std::list<GRBConstr> constraints_;
 
+    // operator to compare two branch nodes. A branch node comes before another
+    // if its bound is lower.
     bool operator<(const BranchNode& other) const
     {
         return bound < other.bound;
     }
 
+    // prints the leaves of the branch tree routed at this branch node
     void print_leaves()
     {
         if (child0)
@@ -135,17 +154,32 @@ struct BranchNode
     }
 };
 
+// method for comparing two branch nodes.
+// Node n0 comes before n1 if its bound is smaller
 auto branch_node_compare = [] (BranchNode* n0, BranchNode* n1) -> bool
 {
     return n0->bound < n1->bound;
 };
 
+// Priority queue of branch nodes. 
+// Top of the queue is the node with larges bound.
 typedef std::priority_queue<BranchNode*, std::vector<BranchNode*>, decltype(branch_node_compare)> BranchNodeQueue;
 
 
 
-
-
+/**
+ * Class for managing the branch and cut algorithm for the clique partitioning problem.
+ * This class maintains a branch and bound tree and (if branching is activated)
+ * solves the clique partitioning problem by solving the linear relaxations of each branch node.
+ * If the solution obtained by solving the LP of the current branch node is not integral, 
+ * a fractional variable x_{i, j} is selected. Two children of the current branch node are created and
+ * initialized with copies of the LP. The constraints x_{i, j} = 0 and x_{i, j} = 1 are added
+ * to the respective LPs.
+ * The constraints of the LP are modeled with lazily. That is, instead of enumerating
+ * all inequalities upfront, only inequalities that are violated by the current solution to the LP
+ * are added to the model. Moreover, inequalities that were not basic for several iterations 
+ * are removed from the model in order to keep the model sparse.
+ */
 template<class EDGE_COST_MAP>
 class BnC
 {
@@ -154,22 +188,33 @@ public:
     typedef EdgePropertyMap<VECTOR> EPM;
 
     // public attributes
+    // If a constraint is non-basic for more than max_iter_non_basic iterations, it is removed from the LP
     size_t max_iter_non_basic = std::numeric_limits<size_t>::max();
+    // The higher the verbosity number is, the more information is printed to the console.
     size_t verbosity = 0;
+    // The cutting plane algorithm (for solving an LP relaxation) is terminated if the relative decrease
+    // of the objective value is less than tail_threshold for more than max_tail_length iterations
     double tail_threshold = 1.0;
     size_t max_tail_length = std::numeric_limits<size_t>::max();
+    // if activate_branching is false, only the LP relaxation at the root node is solved.
     bool activate_branching = false;
 
+    // Initialize an instance of the clique partitioning problem by specifying its costs
     BnC(EDGE_COST_MAP edge_costs) :
         BnC(edge_costs, GRBEnv())
     {}
 
+    // Initialize an instance of the clique partitioning problem by specifying its costs
     BnC(EDGE_COST_MAP edge_costs, GRBEnv env) :
         n_(edge_costs.n()),
-        callback_(n_),
+        separator_callback_(n_),
         edge_costs_(edge_costs),
         root_node_(env),
-        branch_queue_(branch_node_compare)
+        branch_queue_(branch_node_compare),
+        lp_solution_(n_ * (n_-1) / 2, 0),
+        lp_solution_map_(n_, lp_solution_),
+        best_integer_solution_(n_ * (n_-1) / 2, 0),
+        best_integer_solution_map_(n_, best_integer_solution_)
     {
         root_node_.model.set(GRB_IntAttr_ModelSense, -1);  // maximize
 
@@ -185,11 +230,14 @@ public:
                 "x_"+std::to_string(i)+"_"+std::to_string(j));
             vars_[j][i] = vars_[i][j];
         }
-        root_node_.model.set(GRB_IntParam_OutputFlag, 0);
+        root_node_.model.set(GRB_IntParam_OutputFlag, 0);  // deactivate gurobi output
         root_node_.model.set(GRB_IntParam_Method, 1);  // use dual simplex
         current_node_ = &root_node_;
     }
     
+    // This method adds some triangle inequalities to the model.
+    // It can be beneficial to add those inequalities upfront instead of 
+    // waiting until they are added lazily.
     void add_triangle_inequalities_based_on_negative_cost()
     {
         // for each edge ij with negative cost, add a triangle inequality of the
@@ -218,6 +266,9 @@ public:
         }
     }
 
+    // This method adds some triangle inequalities to the model.
+    // It can be beneficial to add those inequalities upfront instead of 
+    // waiting until they are added lazily.
     void add_triangle_inequalities_based_on_positive_cost()
     {
         // for each edge ij with positive cost, add a triangle inequality of the
@@ -260,6 +311,7 @@ public:
         }
     }
 
+    // This function optimizes the model.
     void optimize(double time_limit = std::numeric_limits<double>::max(), double best_objective = 0)
     {   
         optimization_start_time_ = Time::now();
@@ -273,6 +325,8 @@ public:
         }
         root_node_.bound = trivial_bound;
 
+        // if branching is activated, an integer feasible solution is computed by means
+        // of a local search heuristic (kernighan lin based greedy moving)
         best_objective_ = best_objective;
         if (activate_branching)
         {
@@ -280,7 +334,12 @@ public:
             std::iota(node_labels.begin(), node_labels.end(), 0);
             double kl_obj = kernighanLin(edge_costs_, node_labels);
             if (kl_obj > best_objective_)
+            {
                 best_objective_ = kl_obj;
+                for (size_t i = 0; i < n_; ++i)
+                for (size_t j = i+1; j < n_; ++j)
+                    best_integer_solution_map_(i, j) = node_labels[i] == node_labels[j];
+            }
         }
 
         // logging
@@ -303,14 +362,13 @@ public:
         {
             if (branch_queue_.size() == 0)
                 throw std::runtime_error("Branch queue is empty.");
-            //std::cout << "queue.size() = " << branch_queue_.size() << "\n";
             // get the branch node with the largest bound
             current_node_ = branch_queue_.top();
             branch_queue_.pop();
-            if (std::abs(current_node_->bound - root_node_.bound) > 1e-3)
-            {
-                throw std::runtime_error("This should not have happened!");
-            }
+            // assert that the bound is at least as strong as the bound of the root node
+            assert (std::abs(current_node_->bound < root_node_.bound + 1e-3));
+            // If the bound is less than one greater than the best objective, 
+            // then the best objective is optimal
             if (current_node_->bound < best_objective_ + 1 - EPSILON)
                 break;  // found optimal solution
             
@@ -330,8 +388,12 @@ public:
             // check if solution is integer
             if (num_integer() == n_ * (n_ - 1) / 2)
             {
+                // update the best integer objective
                 if (current_node_->bound > best_objective_)
+                {
                     best_objective_ = current_node_->bound;
+                    best_integer_solution_ = lp_solution_;
+                }
             }
             else if (current_node_->bound >= best_objective_ + 1 - EPSILON)
                 branch_queue_.push(current_node_);  // If solution remains fractional, add it back to the queue for branching
@@ -339,21 +401,25 @@ public:
             if (!activate_branching)
                 break;
 
-            // round the fractional solution
+            // round the fractional solution in order to find a new best integer feasible solution
             if (current_node_->lp_solved)
             {
-                VECTOR edge_value_vector(n_ * (n_-1) / 2);
-                EPM edge_value_map(n_, edge_value_vector);
-                for (size_t i = 0; i < n_; ++i)
-                for (size_t j = i+1; j < n_; ++j)
-                    edge_value_map(i, j) = edge_value(i, j);
-                double obj = round_kl(edge_value_map, edge_costs_, 11);
+                std::vector<size_t> node_labels(n_);
+                double obj = round_kl(lp_solution_map_, edge_costs_, 11, node_labels);
                 if (obj > best_objective_)
+                {
                     best_objective_ = obj;
+                    for (size_t i = 0; i < n_; ++i)
+                    for (size_t j = i+1; j < n_; ++j)
+                        best_integer_solution_map_(i, j) = node_labels[i] == node_labels[j];
+                }
             }
 
             if (root_node_.bound < best_objective_ + 1 - EPSILON)
+            {
                 break;  // found and proved optimal solution
+                
+            }
             if (((float_time_point)Time::now() - optimization_start_time_).count() > time_limit_)
                 break;  // hit time limit
         }
@@ -362,53 +428,58 @@ public:
         print_status_(std::cout);
         if (verbosity == 1)
             std::cout << "\n";
+        // clear the branch tree
         root_node_.delete_children();
+        current_node_ = &root_node_;
     }
 
+    // return a reference to the separator callback (e.g. for adding additional separation routines)
     Callback<EPM>& separator_callback()
     {
-        return callback_;
+        return separator_callback_;
     }
 
+    // return the global bound (i.e. bound at root node)
     double bound()
     {
         return root_node_.bound;
     }
 
+    // return the best integer feasible objective
     double best_objective()
     {
         return best_objective_;
     }
 
-    double edge_value(size_t i, size_t j)
-    {
-        GRBVar* var = &vars_[i][j];
-        double* val;
-        val = current_node_->model.get(GRB_DoubleAttr_X, var, 1);
-        return val[0];
-    }
-
+    // return the number of integer variables in the current LP
     size_t num_integer()
     {
         size_t count = 0;
         for (size_t i = 0; i < n_; ++i)
         for (size_t j = i+1; j < n_; ++j)
         {
-            double x = edge_value(i, j);
+            double x = edge_value_(i, j);
             count += std::abs(x - int(x + 0.5)) < 1e-3;
         }
         return count;
     }
 
+    // Print the variable values of the solution
     template<class OUT_STREAM>
-    void print_solution(OUT_STREAM& out)
+    void print_solution(OUT_STREAM& out, bool integer=true)
     {
         out << n_ << "\n";
         for (size_t i = 0; i < n_; ++i)
         {
             for (size_t j = i+1; j < n_; ++j)
-            {
-                out << edge_value(i, j) << " ";
+            {   
+                double val = integer ? best_integer_solution_map_(i, j) : lp_solution_map_(i, j);
+                // round to 0 or 1 if close
+                if (val < EPSILON)
+                    val = 0;
+                else if (val > 1 - EPSILON)
+                    val = 1;
+                out << val << " ";
             }
             out << "\n";
         }
@@ -450,26 +521,31 @@ public:
     }
 
 private:
-    size_t n_;
-    EDGE_COST_MAP edge_costs_;
+    size_t n_;  // number of nodes of the instance
+    EDGE_COST_MAP edge_costs_;  // edge costs of the instance
 
-    std::vector<std::vector<GRBVar>> vars_;
-
-    Callback<EPM> callback_;
+    std::vector<std::vector<GRBVar>> vars_;  // variables of the gurobi model
     
+    VECTOR lp_solution_;  // variable values of the LP that has been solved last
+    EPM lp_solution_map_;
+    VECTOR best_integer_solution_;  // variable value of best integer feasible solution
+    EPM best_integer_solution_map_;
+
+
+    Callback<EPM> separator_callback_;  // separator callback to separate fractional solution
+    
+    // time limits
     float_time_point optimization_start_time_;
     double time_limit_;
     double lp_time_;
-    size_t num_separation_calls_ = 0;
-    double best_objective_ = 0;
 
-    size_t tail_counter_;
+    size_t num_separation_calls_ = 0;  // number of times the separator was called
+    double best_objective_ = 0;  // maximum objective value of an integer feasible solution
+
+    size_t tail_counter_;  // number of iterations in which the LP did not improve more than a certain threshold
     size_t stage_;  // separator stage of the last call back
-    size_t min_stage_;
 
-    std::ofstream log_file_;
-
-    // logging stuff
+    // vectors for logging different numerical value (time, bounds, etc.)
     std::vector<double> log_elapsed_time_;
     std::vector<double> log_current_node_bound_;
     std::vector<double> log_global_bound_;
@@ -478,17 +554,18 @@ private:
     std::vector<double> log_lp_time_;
     std::vector<double> log_explored_node_count_;
 
-    // branching stuff
+    // representation of the branch tree
     BranchNode root_node_;
     BranchNode* current_node_;
     BranchNodeQueue branch_queue_;
     size_t explored_node_count_;
 
+    // status bar of printout during branch and cut algorithm
     template<class OUT_STREAM>
     void print_status_bar_(OUT_STREAM& out)
     {
         if (verbosity == 0)
-            return;
+            return;  // do not print anything if verbosity is 0
         std::cout 
             << " Iter "
             << "EXPND "
@@ -501,11 +578,12 @@ private:
             << "   NODBND "
             << "  %I "
             << "#Constr ";
-        for (size_t i = 0; i < callback_.num_separators(); ++i)
-            std::cout << std::setw(20) << callback_.name(i) << " ";
+        for (size_t i = 0; i < separator_callback_.num_separators(); ++i)
+            std::cout << std::setw(20) << separator_callback_.name(i) << " ";
         std::cout << "\n";
     }
 
+    // print the numerical values below the status bar
     template<class OUT_STREAM>
     void print_status_(OUT_STREAM& out)
     {
@@ -525,29 +603,32 @@ private:
         double frac_int = (double)num_integer() / (n_ * (n_ - 1) / 2);
         std::cout << std::setw(4) << std::setprecision(3) << 100 * frac_int << " ";
         std::cout << std::setw(7) << current_node_->model.get(GRB_IntAttr_NumConstrs) << " ";
-        for (size_t i = 0; i < callback_.num_separators(); ++i)
+        for (size_t i = 0; i < separator_callback_.num_separators(); ++i)
         {
 
             std::cout 
-                << std::setw(4) << callback_.num_calls(i) << " "
-                << std::setw(7) << callback_.num_inequalities(i) << " " 
-                << std::setw(7) << std::setprecision(5) << callback_.time(i) << " ";
+                << std::setw(4) << separator_callback_.num_calls(i) << " "
+                << std::setw(7) << separator_callback_.num_inequalities(i) << " " 
+                << std::setw(7) << std::setprecision(4) << separator_callback_.time(i) << " ";
         }
         if (verbosity >= 2)
-            std::cout << "\n";
+            std::cout << "\n"; // if verbosity is large, print a new line instead of overwriting the previous line
         else 
             std::cout << "    " << std::flush;
 
     }
 
+    // add a constraint to the LP of the current node of the branch tree
     void add_constraint(const GRBTempConstr& constr)
     {
         current_node_->constraints_.emplace_back(current_node_->model.addConstr(constr));
         current_node_->num_non_basic_iterations_.push_back(0);
     }
 
+    // add a constraint to the LP of the current node of the branch tree
     void add_constraint(const Inequality<int>& inequality)
     {
+        // convert the Inequality to a gurobi constraint
         GRBLinExpr expr;
         for (size_t i = 0; i < inequality.edges().size(); ++i)
         {
@@ -558,45 +639,47 @@ private:
         add_constraint(expr <= inequality.rhs());
     }
 
+    // return the variable value x_{i, j} of the current LP
+    double edge_value_(size_t i, size_t j)
+    {
+        GRBVar* var = &vars_[i][j];
+        double* val;
+        val = current_node_->model.get(GRB_DoubleAttr_X, var, 1);
+        return val[0];
+    }
+
+    // separate the current lp solution and return the number of added constraints
     size_t separate_()
     {   
         ++num_separation_calls_;
-
-        VECTOR result(n_ * (n_-1) / 2);
-        EPM result_map(n_, result);
-        for (size_t i = 0; i < n_; ++i)
-        for (size_t j = i+1; j < n_; ++j)
-            result_map(i, j) = edge_value(i, j);
-
-        return separate_continuous_(result_map);
-    }
-
-    size_t separate_continuous_(EPM edge_values)
-    {
-        auto inequalities = callback_(edge_values, stage_, current_node_->min_stage_);
+        // call separator_callback_ to get violated inequalities
+        auto inequalities = separator_callback_(lp_solution_map_, stage_, current_node_->min_stage_);
+        // add those inequalities to the model
         for (const auto& inequality : inequalities)
-        {
             add_constraint(inequality);
-        }
+        // return number of added inequalities
         return inequalities.size();
     }
 
-    size_t remove_non_binding_constraints()
+    // remove constraints from the model that have been non-basic for a certain number of iterations
+    size_t remove_non_basic_constraints()
     {
         assert (current_node_->constraints_.size() + current_node_->depth == current_node_->model.get(GRB_IntAttr_NumConstrs));
         assert (current_node_->num_non_basic_iterations_.size() == current_node_->constraints_.size()); 
-        size_t num_removed = 0;
+        size_t num_removed = 0;  // count how many constraints are removed
+        // iterate over constraints in current model
         auto it_constr = current_node_->constraints_.cbegin();
         auto it_count = current_node_->num_non_basic_iterations_.begin();
-
         while ( it_constr != current_node_->constraints_.cend() ) 
         {   
-            if (it_constr->get(GRB_IntAttr_CBasis) == 0) {
+            // increase counter if constraint is non-basic
+            if (it_constr->get(GRB_IntAttr_CBasis) == 0)
                 ++(*it_count);
-            }
-            else {
+            // otherwise, reset the counter
+            else
                 *it_count = 0;
-            }
+            
+            // if the counter reached maximum value, remove constraint
             if (*it_count >= max_iter_non_basic)
             {
                 current_node_->model.remove(*it_constr);
@@ -613,16 +696,20 @@ private:
         return num_removed;
     }
 
+    // preform branching step of branch and cut algorithm:
+    //  1. select an edge variable x_{i, j} for branching
+    //  2. create two children of the current branch node and
+    //      initialize them with copies of the current LP
+    //  3. Add x_{i, j} = 0 and x_{i, j} = 1 to the two copies, respectively
     void branch_()
     {
-        if (num_integer() == n_ * (n_-1) / 2)
-            throw std::runtime_error("current node is already integer!");
-
+        // assert that the current node has a fractional variable
+        assert (num_integer() < n_ * (n_-1) / 2);
         // select a variable to branch on
         size_t i;
         size_t j; 
         select_branching_variable_(i, j);
-        //
+        // if verbosity is very high, print variable
         if (verbosity >= 100)
             std::cout << "branching on " << i << " " << j << "\n";
 
@@ -643,6 +730,10 @@ private:
         branch_queue_.push(current_node_->child1);
     }
 
+    // select for branching the edge {i,j} that maximizes
+    //      x_{i,j} * (1-x_{i,j}) * c_{i, j}
+    // However, if the maximal value is 0, then select the variable
+    // that is closes to 0.5.
     void select_branching_variable_(size_t& i, size_t& j)
     {
         double largest_value = 0;
@@ -652,7 +743,7 @@ private:
         for (size_t a = 0; a < n_; ++a)
         for (size_t b = a+1; b < n_; ++b)
         {
-            double x_ab = edge_value(a, b);
+            double x_ab = edge_value_(a, b);
             if (x_ab <= 0.001 || x_ab >= 0.999)
                 continue; // x_ab is integral
             double value = x_ab * (1-x_ab) * edge_costs_(a, b);
@@ -678,6 +769,9 @@ private:
         }
     }
 
+    // Solve the LP of the current branch node
+    // This is done by iteratively solving the LP, adding new violated constraints
+    // and removing constraints that have been non-basic for a certain number of iterations
     void solve_current_node_lp_()
     {
         current_node_->model.update();
@@ -686,6 +780,7 @@ private:
         log_();
         while (true)
         {
+            // solve the LP within time limit
             float_time_point lp_start = Time::now();
             double elapsed_time = (lp_start - optimization_start_time_).count();
             if (elapsed_time > time_limit_)
@@ -694,27 +789,26 @@ private:
             current_node_->model.optimize();
             float_time_point lp_end = Time::now();
             lp_time_ += (lp_end - lp_start).count();
+            // check LP status
             if (current_node_->model.get(GRB_IntAttr_Status) == GRB_INFEASIBLE)
                 throw std::runtime_error("Model is infeasible!");
             if (current_node_->model.get(GRB_IntAttr_Status) == GRB_TIME_LIMIT)
                 return;
-            
+            // extract the solution from the LP
+            for (size_t i = 0; i < n_; ++i)
+            for (size_t j = i+1; j < n_; ++j)
+                lp_solution_map_(i, j) = edge_value_(i, j);
+            // extract the objective value
             double new_objective = current_node_->model.get(GRB_DoubleAttr_ObjVal);
             double old_objective = current_node_->bound;
             current_node_->set_bound(new_objective);
 
-            print_status_(std::cout);
-
-            if (current_node_->model.get(GRB_IntAttr_Status) == GRB_TIME_LIMIT)
-                break;
-
-            if (stage_ > current_node_->min_stage_);
-            {
-                current_node_->min_stage_ = stage_;
-            }
-
             // logging
+            print_status_(std::cout);
             log_();
+
+            // update the minimum stage of the separator for this node
+            current_node_->min_stage_ = std::max(stage_, current_node_->min_stage_);
 
             // check if tailing of condition is met
             if (new_objective >= tail_threshold * old_objective)
@@ -723,7 +817,7 @@ private:
                 if (tail_counter_ >= max_tail_length)
                 {
                     // If the minimum callback stage can be increase, increase the stage
-                    if (current_node_->min_stage_ + 1 < callback_.num_stages())
+                    if (current_node_->min_stage_ + 1 < separator_callback_.num_stages())
                     {
                         ++current_node_->min_stage_;
                         tail_counter_ = 0;
@@ -741,27 +835,25 @@ private:
             // if objective increased, remove non-binding cuts
             if (new_objective < old_objective - EPSILON)
             {
-                size_t num_removed = remove_non_binding_constraints();
+                size_t num_removed = remove_non_basic_constraints();
             }
 
+            // if the objective is less than one greater than the best integer feasible objective
+            // then, this branch node need not to be considered any further
             if (activate_branching && current_node_->bound < best_objective_ + 1 - EPSILON)
-            {
                 break;
-            }
 
+            // call the separator callback
             size_t n = separate_();
+            // if no additional inequalities are added to the model, this branch node is solved
             if (n == 0)
-            {
                 break;
-            }
-
-            // if (current_node_->bound < root_node_.bound - EPSILON)
-               //  return;
         }
         current_node_->lp_solved = true;
         ++explored_node_count_;
     }
 
+    // log various numerical values
     void log_()
     {
         log_elapsed_time_.push_back(((float_time_point)Time::now() - optimization_start_time_).count());
