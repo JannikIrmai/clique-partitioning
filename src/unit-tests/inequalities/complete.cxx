@@ -10,7 +10,7 @@ void test(const bool& b)
 }
 
 
-typedef CP::EdgePropertyMap<std::vector<double>> EPM;
+typedef CP::EdgePropertyMap<double> EPM;
 
 
 void test_constructor()
@@ -20,33 +20,26 @@ void test_constructor()
 
     test(sep.name() == "Complete5");
 
-    std::vector<double> edge_values(n*(n-1)/2, 0);
-    EPM epm(n, edge_values);
-    auto ineq = sep.separate_(epm);
-    assert (ineq.size() == 0);
+    EPM epm(n, 0.0);
+    auto inequalities = sep.separate_(epm);
+    test (inequalities.size() == 0);
 }
 
 
 void test_bow_tie()
 {
-    typedef CP::EdgePropertyMap<std::vector<double>> EPM;
-
     std::vector<double> edge_values = {0.5, 0.5, 0.5, 0.5, 1, 0, 0, 0, 0, 1};
     EPM edge_value_map(5, edge_values);
 
     CP::CompleteSeparator<EPM> separator(5, 0, 5);
     std::vector<CP::Inequality<int>> inequalities = separator.separate_(edge_value_map);
-
-    // test (inequalities.size() == 1);
+    test (inequalities.size() == 0);
 }
 
 void test_soup_fractional()
 {
-    typedef CP::EdgePropertyMap<std::vector<double>> EPM;
-
     size_t n = 11;
-    std::vector<double> edge_values(n * (n - 1) / 2);
-    EPM edge_value_map(n, edge_values);
+    EPM edge_value_map(n, 0.0);
     edge_value_map(0, 1) = 0.5;
     edge_value_map(1, 2) = 0.5;
     edge_value_map(1, 3) = 0.5;

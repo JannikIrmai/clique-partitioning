@@ -12,7 +12,11 @@ namespace CP
 
 // round fractional solution with kernighan lin based greedy moving algorithm
 template<class EDGE_VALUE_MAP, class EDGE_COST_MAP>
-typename EDGE_COST_MAP::VALUE_TYPE round_kl(EDGE_VALUE_MAP edge_values, EDGE_COST_MAP edge_costs, size_t steps, std::vector<size_t>& node_labels)
+typename EDGE_COST_MAP::VALUE_TYPE round_kl(
+    const EDGE_VALUE_MAP& edge_values, 
+    const EDGE_COST_MAP& edge_costs, 
+    size_t steps, 
+    std::vector<size_t>& node_labels)
 {
     assert (edge_costs.n() == edge_values.n());
     typename EDGE_COST_MAP::VALUE_TYPE best_objective = 0;

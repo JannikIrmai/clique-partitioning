@@ -35,7 +35,7 @@ public:
     
     std::string name() { return "OddBicycleWheel"; }
 
-    std::vector<Inequality<int>> separate_(EDGE_VALUE_MAP edge_values)
+    std::vector<Inequality<int>> separate_(const EDGE_VALUE_MAP& edge_values)
     {
         std::vector<BicycleWheel> wheels = separate_bicycle_wheel(edge_values);
         std::vector<Inequality<int>> inequalities(wheels.size());
@@ -81,7 +81,7 @@ public:
     * @param edge_values 
     * @return std::vector<BicycleWheel> 
     */
-    std::vector<BicycleWheel> separate_bicycle_wheel(EDGE_VALUE_MAP edge_values)
+    std::vector<BicycleWheel> separate_bicycle_wheel(const EDGE_VALUE_MAP& edge_values)
     {
         size_t n = edge_values.n();
         assert (n == this->n_);

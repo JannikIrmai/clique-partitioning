@@ -1,8 +1,7 @@
 #include <inequalities/hypermetric.hxx>
 #include <property-maps.hxx>
 
-typedef std::vector<double> VALUE_VECTOR;
-typedef CP::EdgePropertyMap<VALUE_VECTOR> EPM;
+typedef CP::EdgePropertyMap<double> EPM;
 
 
 void test(const bool& b)
@@ -15,11 +14,10 @@ void test(const bool& b)
 void test_hyper_metric_separation()
 {
     size_t n = 5;
-    VALUE_VECTOR c(n*(n-1)/2, 1.0/3);
-    EPM ecm(n, c);
+    EPM ecm(n, 1.0/3.0);
 
     for (size_t i = 1; i < n; ++i)
-        ecm(0, i) = 2.0/3;
+        ecm(0, i) = 2.0/3.0;
 
     CP::HyperMetricSeparator<EPM> sep(n);
     auto hyper_metrics = sep.separate_hyper_metric(ecm);

@@ -3,7 +3,7 @@
 #include <load.hxx>
 
 
-typedef CP::EdgePropertyMap<std::vector<int>> EDGE_COST_MAP;
+typedef CP::EdgePropertyMap<int> EDGE_COST_MAP;
 typedef CP::BnC<EDGE_COST_MAP> LP;
 
 int main(int argc, char* argv[])
@@ -12,10 +12,8 @@ int main(int argc, char* argv[])
         throw std::runtime_error("There can only be one argument!");
 
     std::string instance_path(argv[1]);
-
-    auto data = CP::load_cplib<int>(instance_path);
     
-    EDGE_COST_MAP edge_costs(data.first, data.second);
+    EDGE_COST_MAP edge_costs = CP::load_cplib<int>(instance_path);
     LP lp(edge_costs);
 
     lp.activate_branching = true;

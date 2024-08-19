@@ -22,7 +22,7 @@ public:
         if (max_num_ == 0)
             max_num_ = n_*(n_-1)/2;
     }
-    INEQUALITIES separate(EDGE_VALUE_MAP edge_values)
+    INEQUALITIES separate(const EDGE_VALUE_MAP& edge_values)
     {
         float_time_point start = Time::now();
         INEQUALITIES inequalities = separate_(edge_values);
@@ -51,7 +51,7 @@ protected:
     double min_relative_euclidean_violation_ = 0.5;  // only inequalities whose euclidean violation is greater than this value times the greatest euclidean violation of all violated inequalities are separated
     double max_parallel_ = 0.5;  // for two inequalities that are more parallel than this coefficient, only one is separated
 
-    virtual INEQUALITIES separate_(EDGE_VALUE_MAP edge_values) = 0;
+    virtual INEQUALITIES separate_(const EDGE_VALUE_MAP& edge_values) = 0;
 
     void sort_and_reduce_by_euclidean_violation(INEQUALITIES& inequalities) const
     {

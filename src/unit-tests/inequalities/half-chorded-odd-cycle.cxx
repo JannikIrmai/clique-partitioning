@@ -11,7 +11,7 @@ void test(const bool& b)
 
 void test_half_chorded_odd_cycle()
 {
-    typedef CP::EdgePropertyMap<std::vector<double>> EPM;
+    typedef CP::EdgePropertyMap<double> EPM;
 
     std::vector<double> edge_values = {0.5, 1.0, 1.0, 0.5, 0.5, 1.0, 1.0, 0.5, 1.0, 0.5};
     EPM edge_value_map(5, edge_values);

@@ -11,8 +11,6 @@ void test(const bool& b)
 }
 
 
-
-
 GRBModel get_model(GRBEnv env, size_t n, std::vector<std::vector<GRBVar>>& vars, bool binary = false)
 {
     GRBModel model(env);
@@ -42,9 +40,11 @@ GRBModel get_model(GRBEnv env, size_t n, std::vector<std::vector<GRBVar>>& vars,
 }
 
 
+typedef CP::EdgePropertyMap<double> EPM;
+
+
 void test_wheel()
 {
-    typedef CP::EdgePropertyMap<std::vector<double>> EPM;
     
     GRBEnv env;
     std::vector<std::vector<GRBVar>> vars;
@@ -52,12 +52,9 @@ void test_wheel()
     for (size_t k = 3; k < 15; ++k)
     {
         size_t n = k+1;
-        size_t m = n * (n - 1) / 2;
-        std::vector<double> edge_values(m, 0.5);
-        EPM edge_value_map(n, edge_values);
+        EPM edge_value_map(n, 0.5);
         for (size_t i = 0; i < k; ++i)
         {
-            edge_value_map(0, i + 1) = 0.5;
             edge_value_map(i + 1, (i+1)%k + 1) = 0.0;
         }
 
@@ -93,17 +90,13 @@ void test_wheel()
 
 
 void test_two_chorded_cycle()
-{
-    typedef CP::EdgePropertyMap<std::vector<double>> EPM;
-    
+{    
     GRBEnv env;
     std::vector<std::vector<GRBVar>> vars;
 
     for (size_t n = 5; n < 15; ++n)
     {
-        size_t m = n * (n - 1) / 2;
-        std::vector<double> edge_values(m, 0.5);
-        EPM edge_value_map(n, edge_values);
+        EPM edge_value_map(n, 0.5);
         for (size_t i = 0; i < n; ++i)
         {
             edge_value_map(i, (i+1)%n) = 0.0;
@@ -142,9 +135,7 @@ void test_two_chorded_cycle()
 
 
 void test_half_chorded_cycle()
-{
-    typedef CP::EdgePropertyMap<std::vector<double>> EPM;
-    
+{    
     GRBEnv env;
     std::vector<std::vector<GRBVar>> vars;
 
@@ -152,8 +143,7 @@ void test_half_chorded_cycle()
     {
         size_t m = n * (n - 1) / 2;
         size_t k = n / 2;
-        std::vector<double> edge_values(m);
-        EPM edge_value_map(n, edge_values);
+        EPM edge_value_map(n);
         for (size_t i = 0; i < n; ++i)
         for (size_t d = 1; d<=k; ++d)
         {

@@ -2,21 +2,19 @@
 #include <vector>
 #include <sstream>
 #include <iterator>
+#include <property-maps.hxx>
 
 
 namespace CP {
 
 // load a CP-Lib instance in the format of https://github.com/MMSorensen/CP-Lib
-
 template<class T>
-std::pair<size_t, std::vector<T>> load_cplib(const std::string file_name)
+EdgePropertyMap<T> load_cplib(const std::string file_name)
 {
-
-    std::ifstream file;
+    // open text file
+    std::ifstream file(file_name);
     std::string line;
-
-    file.open(file_name);
-
+    
     if (!file.is_open())
         throw std::runtime_error("Unable to open file");
     
@@ -24,6 +22,7 @@ std::pair<size_t, std::vector<T>> load_cplib(const std::string file_name)
     std::getline(file, line);
     size_t n = std::stoul(line);
 
+    // read edge costs to vector
     std::vector<T> edge_costs;
 
     for (size_t i = 0; i < n-1; ++i)
@@ -37,6 +36,7 @@ std::pair<size_t, std::vector<T>> load_cplib(const std::string file_name)
         );
     }
 
+    // return number of nodes and edges costs
     return {n, edge_costs};
 }
 

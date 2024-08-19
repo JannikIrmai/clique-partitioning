@@ -75,7 +75,7 @@ public:
     const double& euclidean_violation() const {return euclidean_violation_;}
 
     template<class EDGE_VALUE_MAP>
-    double evaluate(EDGE_VALUE_MAP edge_values) const
+    double evaluate(const EDGE_VALUE_MAP& edge_values) const
     {
         double value = 0;
         for (size_t i = 0; i < edges_.size(); ++i)

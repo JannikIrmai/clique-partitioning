@@ -3,8 +3,7 @@
 #include <clique-partitioning-bnc.hxx>
 
 
-typedef std::vector<int> VECTOR;
-typedef CP::EdgePropertyMap<VECTOR> EPM;
+typedef CP::EdgePropertyMap<int> EPM;
 typedef CP::BnC<EPM> BnC;
 
 
@@ -35,7 +34,7 @@ void test_copy_gurobi_model()
 
 void test_3_wheel()
 {
-    VECTOR costs = {1, 1, 1, -1, -1, -1};
+    std::vector<int> costs = {1, 1, 1, -1, -1, -1};
     EPM cost_map(4, costs);
 
     BnC bnc(cost_map);

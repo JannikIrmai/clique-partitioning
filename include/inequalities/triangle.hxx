@@ -20,7 +20,7 @@ public :
 
     std::string name() { return "Triangle"; }
 
-    std::vector<Inequality<int>> separate_(EDGE_VALUE_MAP edge_values)
+    std::vector<Inequality<int>> separate_(const EDGE_VALUE_MAP& edge_values)
     {
         size_t n = edge_values.n();
         assert (edge_values.n() == this->n_);

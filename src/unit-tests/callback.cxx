@@ -5,7 +5,7 @@
 
 void test_callback()
 {
-    typedef CP::EdgePropertyMap<std::vector<double>> EPM;
+    typedef CP::EdgePropertyMap<double> EPM;
     std::vector<double> edge_values = {0.5, 0.5, 0.5, 0, 0, 0};
     EPM edge_value_map(4, edge_values);
 

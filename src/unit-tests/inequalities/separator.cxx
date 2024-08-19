@@ -10,7 +10,7 @@
 
 void test_vector_of_separators()
 {
-    typedef CP::EdgePropertyMap<std::vector<double>> EPM;
+    typedef CP::EdgePropertyMap<double> EPM;
     typedef CP::AbstractSeparator<int, EPM> AbstractSeparator;
     typedef CP::TriangleSeparator<EPM> TriangleSeparator;
     typedef CP::OddWheelSeparator<EPM> OddWheelSeparator;

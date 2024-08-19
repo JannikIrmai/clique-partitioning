@@ -45,7 +45,7 @@ public:
     
     std::string name() { return "Complete"+std::to_string(k_); }
 
-    std::vector<Inequality<int>> separate_(EDGE_VALUE_MAP edge_values)
+    std::vector<Inequality<int>> separate_(const EDGE_VALUE_MAP& edge_values)
     {
         std::vector<Inequality<int>> inequalities;
 
@@ -66,7 +66,7 @@ private:
     std::vector<std::vector<int>> coefficients_;
 
 
-    void iterate_(std::vector<size_t>& choice, size_t i, std::vector<Inequality<int>>& inequalities, EDGE_VALUE_MAP edge_values)
+    void iterate_(std::vector<size_t>& choice, size_t i, std::vector<Inequality<int>>& inequalities, const EDGE_VALUE_MAP& edge_values)
     {
         size_t start = 0;
         if (i > 0)
@@ -94,7 +94,7 @@ private:
         }
     }
 
-    void separate_choice_(std::vector<size_t>& choice, std::vector<Inequality<int>>& inequalities, EDGE_VALUE_MAP edge_values)
+    void separate_choice_(std::vector<size_t>& choice, std::vector<Inequality<int>>& inequalities, const EDGE_VALUE_MAP& edge_values)
     {
         for (const std::vector<int>& coeff : coefficients_)
         {

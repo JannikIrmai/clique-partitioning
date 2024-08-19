@@ -31,7 +31,7 @@ public:
     
     std::string name() { return "HCO-Cycle"; }
 
-    std::vector<Inequality<int>> separate_(EDGE_VALUE_MAP edge_values)
+    std::vector<Inequality<int>> separate_(const EDGE_VALUE_MAP& edge_values)
     {
         std::vector<Cycle> cycles = separate_cycles(edge_values);
         std::vector<Inequality<int>> inequalities(cycles.size());
@@ -53,7 +53,7 @@ public:
         return inequalities;
     }
 
-    std::vector<Cycle> separate_cycles(EDGE_VALUE_MAP edge_values)
+    std::vector<Cycle> separate_cycles(const EDGE_VALUE_MAP& edge_values)
     {
         size_t n = edge_values.n();
         assert (n == this->n_);

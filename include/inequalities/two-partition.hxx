@@ -114,7 +114,7 @@ public:
         return "TwoPartition";
     }
 
-    std::vector<Inequality<int>> separate_(EDGE_VALUE_MAP edge_values)
+    std::vector<Inequality<int>> separate_(const EDGE_VALUE_MAP& edge_values)
     {
         size_t max_size = 0;        
         size_t total_size = 0;
@@ -135,7 +135,7 @@ public:
     }
 
 
-    std::vector<TwoPartition> separate_two_partition(EDGE_VALUE_MAP edge_values)
+    std::vector<TwoPartition> separate_two_partition(const EDGE_VALUE_MAP& edge_values)
     {
         std::vector<TwoPartition> two_partitions;
 
@@ -154,7 +154,7 @@ public:
         return two_partitions;
     }
 
-    void add_two_partition(size_t a, size_t b, EDGE_VALUE_MAP edge_values, std::vector<TwoPartition>& two_partitions)
+    void add_two_partition(size_t a, size_t b, const EDGE_VALUE_MAP& edge_values, std::vector<TwoPartition>& two_partitions)
     {
         // ------- CONSTRUCTION PHASE ------------------------
         // start with the partition A = {a} and B = {b} and

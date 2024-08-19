@@ -184,8 +184,7 @@ template<class EDGE_COST_MAP>
 class BnC
 {
 public:
-    typedef std::vector<double> VECTOR;
-    typedef EdgePropertyMap<VECTOR> EPM;
+    typedef EdgePropertyMap<double> EPM;
 
     // public attributes
     // If a constraint is non-basic for more than max_iter_non_basic iterations, it is removed from the LP
@@ -200,21 +199,19 @@ public:
     bool activate_branching = false;
 
     // Initialize an instance of the clique partitioning problem by specifying its costs
-    BnC(EDGE_COST_MAP edge_costs) :
+    BnC(const EDGE_COST_MAP& edge_costs) :
         BnC(edge_costs, GRBEnv())
     {}
 
     // Initialize an instance of the clique partitioning problem by specifying its costs
-    BnC(EDGE_COST_MAP edge_costs, GRBEnv env) :
+    BnC(const EDGE_COST_MAP& edge_costs, GRBEnv env) :
         n_(edge_costs.n()),
         separator_callback_(n_),
         edge_costs_(edge_costs),
         root_node_(env),
         branch_queue_(branch_node_compare),
-        lp_solution_(n_ * (n_-1) / 2, 0),
-        lp_solution_map_(n_, lp_solution_),
-        best_integer_solution_(n_ * (n_-1) / 2, 0),
-        best_integer_solution_map_(n_, best_integer_solution_)
+        lp_solution_(n_),
+        best_integer_solution_(n_)
     {
         root_node_.model.set(GRB_IntAttr_ModelSense, -1);  // maximize
 
@@ -338,7 +335,7 @@ public:
                 best_objective_ = kl_obj;
                 for (size_t i = 0; i < n_; ++i)
                 for (size_t j = i+1; j < n_; ++j)
-                    best_integer_solution_map_(i, j) = node_labels[i] == node_labels[j];
+                    best_integer_solution_(i, j) = node_labels[i] == node_labels[j];
             }
         }
 
@@ -392,7 +389,9 @@ public:
                 if (current_node_->bound > best_objective_)
                 {
                     best_objective_ = current_node_->bound;
-                    best_integer_solution_ = lp_solution_;
+                    for (size_t i = 0; i < n_; ++i)
+                    for (size_t j = i+1; j < n_; ++j)
+                        best_integer_solution_(i, j) = lp_solution_(i, j);
                 }
             }
             else if (current_node_->bound >= best_objective_ + 1 - EPSILON)
@@ -405,13 +404,13 @@ public:
             if (current_node_->lp_solved)
             {
                 std::vector<size_t> node_labels(n_);
-                double obj = round_kl(lp_solution_map_, edge_costs_, 11, node_labels);
+                double obj = round_kl(lp_solution_, edge_costs_, 11, node_labels);
                 if (obj > best_objective_)
                 {
                     best_objective_ = obj;
                     for (size_t i = 0; i < n_; ++i)
                     for (size_t j = i+1; j < n_; ++j)
-                        best_integer_solution_map_(i, j) = node_labels[i] == node_labels[j];
+                        best_integer_solution_(i, j) = node_labels[i] == node_labels[j];
                 }
             }
 
@@ -473,7 +472,7 @@ public:
         {
             for (size_t j = i+1; j < n_; ++j)
             {   
-                double val = integer ? best_integer_solution_map_(i, j) : lp_solution_map_(i, j);
+                double val = integer ? best_integer_solution_(i, j) : lp_solution_(i, j);
                 // round to 0 or 1 if close
                 if (val < EPSILON)
                     val = 0;
@@ -526,10 +525,8 @@ private:
 
     std::vector<std::vector<GRBVar>> vars_;  // variables of the gurobi model
     
-    VECTOR lp_solution_;  // variable values of the LP that has been solved last
-    EPM lp_solution_map_;
-    VECTOR best_integer_solution_;  // variable value of best integer feasible solution
-    EPM best_integer_solution_map_;
+    EPM lp_solution_;  // variable values of the LP that has been solved last
+    EPM best_integer_solution_;  // variable value of best integer feasible solution
 
 
     SeparatorCallback<EPM> separator_callback_;  // separator callback to separate fractional solution
@@ -653,7 +650,7 @@ private:
     {   
         ++num_separation_calls_;
         // call separator_callback_ to get violated inequalities
-        auto inequalities = separator_callback_(lp_solution_map_, stage_, current_node_->min_stage_);
+        auto inequalities = separator_callback_(lp_solution_, stage_, current_node_->min_stage_);
         // add those inequalities to the model
         for (const auto& inequality : inequalities)
             add_constraint(inequality);
@@ -797,7 +794,7 @@ private:
             // extract the solution from the LP
             for (size_t i = 0; i < n_; ++i)
             for (size_t j = i+1; j < n_; ++j)
-                lp_solution_map_(i, j) = edge_value_(i, j);
+                lp_solution_(i, j) = edge_value_(i, j);
             // extract the objective value
             double new_objective = current_node_->model.get(GRB_DoubleAttr_ObjVal);
             double old_objective = current_node_->bound;

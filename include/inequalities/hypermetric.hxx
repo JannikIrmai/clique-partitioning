@@ -30,7 +30,7 @@ struct HyperMetric
     }
 
     template<class EDGE_VALUE_MAP>
-    double compute_violation(EDGE_VALUE_MAP edge_values)
+    double compute_violation(const EDGE_VALUE_MAP& edge_values)
     {
         violation = - (double)rhs;
         for (size_t i = 0; i < b.size(); ++i)
@@ -142,7 +142,7 @@ public:
         return "HyperMetric";
     }
 
-    std::vector<Inequality<int>> separate_(EDGE_VALUE_MAP edge_values)
+    std::vector<Inequality<int>> separate_(const EDGE_VALUE_MAP& edge_values)
     {
         std::vector<HyperMetric> hyper_metrics = separate_hyper_metric(edge_values);
         std::vector<Inequality<int>> inequalities(hyper_metrics.size());
@@ -157,7 +157,7 @@ public:
         return inequalities;
     }
 
-    std::vector<HyperMetric> separate_hyper_metric(EDGE_VALUE_MAP edge_values)
+    std::vector<HyperMetric> separate_hyper_metric(const EDGE_VALUE_MAP& edge_values)
     {
         std::vector<HyperMetric> hyper_metrics;
 
@@ -173,7 +173,7 @@ public:
         return hyper_metrics;
     }
 
-    void add_hyper_metric(size_t u, size_t v, EDGE_VALUE_MAP edge_values, std::vector<HyperMetric>& hyper_metrics)
+    void add_hyper_metric(size_t u, size_t v, const EDGE_VALUE_MAP& edge_values, std::vector<HyperMetric>& hyper_metrics)
     {
         size_t n = edge_values.n();
         assert (n == this->n_);
