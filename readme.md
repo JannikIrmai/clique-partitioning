@@ -33,9 +33,10 @@ Executing
 produces the following output
 
 ```
- Iter EXPND OPNND DEPTH      TIME   LP-TIME    OBJBST    OBJBND    NODBND   %I #Constr             Triangle             OddWheel 
-    0     0     0     0 0.0019531 0.0019531        11        11        11  100      14    0       0       0    0       0       0 
-    0     1     0     0 0.0019531 0.0019531        11        11        11  100      14    0       0       0    0       0       0 
+ Iter EXPND OPNND DEPTH     TIME  LP-TIME    OBJBST    OBJBND    NODBND   %I #Constr              Triangle              OddWheel 
+    0     0     0     0        0        0        11        17        17  100       0    0       0        0    0       0        0 
+    1     0     0     0        0        0        11        11        11  100       8    1       8        0    0       0        0 
+    1     1     0     0        0        0        11        11        11  100       8    1       8        0    0       0        0 
 upper bound = 11
 best integer feasible objective = 11
 ```

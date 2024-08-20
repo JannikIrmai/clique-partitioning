@@ -24,9 +24,6 @@ int main(int argc, char* argv[])
     lp.separator_callback().add_separator<CP::OddWheelSeparator<LP::EPM>>(1);
     lp.verbosity = 2;
 
-    lp.add_triangle_inequalities_based_on_negative_cost();
-    lp.add_triangle_inequalities_based_on_positive_cost();
-
     lp.optimize();
 
     std::cout << "upper bound = " << std::setprecision(10) << lp.bound() << "\n";
