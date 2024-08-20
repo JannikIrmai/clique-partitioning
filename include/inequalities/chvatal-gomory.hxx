@@ -13,7 +13,9 @@
 
 namespace CP {
 
-
+/**
+ * Class for separating {0,1/2}-Chvatal-Gomory cuts as established by Caprara and Fischetti (1996)
+ */
 template<class EDGE_VALUE_MAP>
 class ChvatalGomorySeparator : public AbstractSeparator<int, EDGE_VALUE_MAP> 
 {
