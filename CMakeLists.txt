@@ -60,3 +60,11 @@ add_test(test-clique-web test-clique-web)
 add_executable(main src/main.cxx ${headers})
 target_link_libraries(main ${CMAKE_THREAD_LIBS_INIT} ${GUROBI_CXX_LIBRARY} ${GUROBI_LIBRARY})
 target_compile_features(main PUBLIC cxx_std_17)
+
+# Python interface
+set(PYBIND11_FINDPYTHON ON)
+find_package(pybind11 CONFIG REQUIRED)
+
+pybind11_add_module(clique_partitioning src/python-interface.cxx)
+target_link_libraries(clique_partitioning PRIVATE ${CMAKE_THREAD_LIBS_INIT} ${GUROBI_CXX_LIBRARY} ${GUROBI_LIBRARY})
+install(TARGETS clique_partitioning DESTINATION .)

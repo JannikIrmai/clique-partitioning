@@ -472,7 +472,7 @@ public:
         {
             for (size_t j = i+1; j < n_; ++j)
             {   
-                double val = integer ? best_integer_solution_(i, j) : lp_solution_(i, j);
+                double val = get_solution(i, j, integer);
                 // round to 0 or 1 if close
                 if (val < EPSILON)
                     val = 0;
@@ -482,6 +482,11 @@ public:
             }
             out << "\n";
         }
+    }
+
+    double get_solution(size_t i, size_t j, bool integer)
+    {
+        return integer ? best_integer_solution_(i, j) : lp_solution_(i, j);
     }
 
     const std::vector<double>& get_log_time() const
