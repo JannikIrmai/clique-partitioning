@@ -581,7 +581,7 @@ private:
             << "  %I "
             << "#Constr ";
         for (size_t i = 0; i < separator_callback_.num_separators(); ++i)
-            std::cout << std::setw(20) << separator_callback_.name(i) << " ";
+            std::cout << std::setw(21) << separator_callback_.name(i) << " ";
         std::cout << "\n";
     }
 
@@ -597,8 +597,8 @@ private:
         std::cout << std::setfill(' ') << std::setw(5) << branch_queue_.size() << " ";
         std::cout << std::setfill(' ') << std::setw(5) << current_node_->depth << " ";
         double elapsed_time = ((float_time_point)Time::now() - optimization_start_time_).count();
-        std::cout << std::setw(8) << std::setprecision(5) << elapsed_time << " ";
-        std::cout << std::setw(8) << std::setprecision(5) << lp_time_ << " ";
+        std::cout << std::setw(8) << std::setprecision(4) << elapsed_time << " ";
+        std::cout << std::setw(8) << std::setprecision(4) << lp_time_ << " ";
         std::cout << std::setw(9) << std::setprecision(8) << best_objective() << " ";
         std::cout << std::setw(9) << std::setprecision(8) << bound() << " ";
         std::cout << std::setw(9) << std::setprecision(8) << current_node_->bound << " ";
@@ -611,7 +611,7 @@ private:
             std::cout 
                 << std::setw(4) << separator_callback_.num_calls(i) << " "
                 << std::setw(7) << separator_callback_.num_inequalities(i) << " " 
-                << std::setw(7) << std::setprecision(4) << separator_callback_.time(i) << " ";
+                << std::setw(8) << std::setprecision(4) << separator_callback_.time(i) << " ";
         }
         if (verbosity >= 2)
             std::cout << "\n"; // if verbosity is large, print a new line instead of overwriting the previous line

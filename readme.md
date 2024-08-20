@@ -39,6 +39,22 @@ produces the following output
 upper bound = 11
 best integer feasible objective = 11
 ```
+The Output to the console includes the following columns:
+- `Iter`: Number of times the separation callback was called.
+- `EXPND`: Number of nodes of the branch tree whose LP has been already solved.
+- `OPNND`: Number of open nodes of the branch tree whose LP has not been solved.
+- `DEPTH`: Depth of the node of the branch tree whose LP is solved at the moment.
+- `TIME`: Total elapsed time.
+- `LP-TIME`: Total time consumed by the LP solver.
+- `OBJBST`: Objective value of the best integer feasible solution found so far.
+- `OBJBND`: Upper bound computed by the cutting plane algorithm
+- `NODBND`: LP bound of the nodes whose LP is solved currently (always smaller than `OBJBND`).
+- `%I`: Percentage of integer variables in the current LP solution.
+- `#Constr`: Total number of inequalities added to all LPs during the branch and cut algorithm.
+- For each separation algorithm that is added to the callback there are three numbers:
+    - Total number of times the algorithm has been called.
+    - Total number of violated inequalities that were computed by the algorithm.
+    - Total time consumed by the algorithm.
 
 ## Python interface
 Building the project also creates a python module that can be imported and used from within python.
