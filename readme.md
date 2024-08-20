@@ -1,5 +1,7 @@
 # A cutting plane algorithm for the clique partitioning problem
 
+![example](cpp-example.png)
+
 ## Requirements
 [Gurobi](https://www.gurobi.com/documentation/current/refman/cpp_api_overview.html)
 
