@@ -6,7 +6,18 @@
 
 namespace CP {
 
-
+/**
+ * Abstract class that represents a generic separation algorithm.
+ * Separation algorithms are implemented as subclasses of this abstract class.
+ * In particular each separation algorithm must implement the following functions:
+ *  - name: returns the name of the separation algorithm
+ *  - separate_: returns a list of violated inequalities
+ * This base class support several helper functions for managing violated inequalities,
+ * e.g. sorting and reducing the number of violated inequalities.
+ * Moreover this class tracks some metrics for the separation algorithm like the 
+ * number of times it was called, the number of inequalities that it found and the total
+ * running time.
+ */
 template<class C, class EDGE_VALUE_MAP>
 class AbstractSeparator
 {
@@ -14,14 +25,14 @@ public:
     typedef Inequality<C> INEQUALITY;
     typedef std::vector<INEQUALITY> INEQUALITIES;
 
-    AbstractSeparator(size_t n, size_t max_num = 0) 
-    : 
+    AbstractSeparator(size_t n, size_t max_num = 0) : 
         n_(n),
         max_num_(max_num)
     {
         if (max_num_ == 0)
             max_num_ = n_*(n_-1)/2;
     }
+
     INEQUALITIES separate(const EDGE_VALUE_MAP& edge_values)
     {
         float_time_point start = Time::now();
@@ -53,6 +64,8 @@ protected:
 
     virtual INEQUALITIES separate_(const EDGE_VALUE_MAP& edge_values) = 0;
 
+    // this method implements a heuristic of Sorensen (2020) for reducing the number of inequalities
+    // based on their violation depth
     void sort_and_reduce_by_violation_depth(INEQUALITIES& inequalities) const
     {
         if (inequalities.size() == 0)
@@ -61,7 +74,7 @@ protected:
         // sort by violation depth
         std::stable_sort(inequalities.begin(), inequalities.end(),
             [&inequalities](const INEQUALITY& i1, const INEQUALITY& i2) {return i1.violation_depth() > i2.violation_depth();});
-        // remove inequalities if their violation depth is less than 0.002 or if it is less than half of the largest violation depth
+        // remove inequalities if their violation depth is less than min_violation_depth_ or if it is less than half of the largest violation depth
         double threshold = std::max(min_relative_violation_depth_*inequalities[0].violation_depth(), min_violation_depth_);
         for (size_t i = 0; i < inequalities.size(); ++i)
         {
@@ -73,6 +86,8 @@ protected:
         }
     }
 
+    // this method implements a heuristic of Sorensen (2020) for reducing the number of inequalities
+    // based on how parallel they are
     void reduce_by_parallelism(INEQUALITIES& inequalities) const
     {
         std::vector<INEQUALITY> selected_inequalities;
@@ -97,6 +112,9 @@ protected:
         inequalities = selected_inequalities;
     }
 
+    // this method implements a heuristic for reducing the number of inequalities by
+    // removing those inequalities that only contain non-zero coefficients for edges
+    // that are already 'covered' by other inequalities.
     void sort_and_reduce_by_overlap(INEQUALITIES& inequalities) const
     {
         if (inequalities.size() == 0)

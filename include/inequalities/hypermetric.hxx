@@ -21,6 +21,7 @@ struct HyperMetric
     int sum_of_square_squares;
     double violation_depth;
 
+    // print the parameters to the command line
     void print()
     {
         for (size_t i = 0; i < b.size(); ++i)
@@ -29,6 +30,7 @@ struct HyperMetric
         std::cout << "\b, violation = " << violation << "\n";
     }
 
+    // compute how much the hyper metric inequality is violated wrt. to given edge values
     template<class EDGE_VALUE_MAP>
     double compute_violation(const EDGE_VALUE_MAP& edge_values)
     {
@@ -47,6 +49,7 @@ struct HyperMetric
         return violation;
     }
 
+    // compute the right hand side of the hyper metric inequality with parameters b
     int compute_rhs()
     {
         rhs = 0;
@@ -57,6 +60,7 @@ struct HyperMetric
         return rhs;
     }
 
+    // compute the violation depth from the parameters and the violation
     double compute_violation_depth()
     {
         sum_of_squares = 0;
@@ -72,6 +76,7 @@ struct HyperMetric
         return violation_depth;
     }
 
+    // compare two hyper metric inequalities (based on their parameters)
     bool operator<(const HyperMetric& other) const
     {
         assert (b.size() == other.b.size());
@@ -99,12 +104,11 @@ struct HyperMetric
 };
 
 
+// compute the inequality that is defined by the parameters of a hyper metric inequality
 Inequality<int> hyper_metric_to_inequality(const HyperMetric& hyper_metric)
 {
-    // compute the number of non-zero coefficients in the inequality
     std::vector<std::array<size_t, 2>> edges;
-    std::vector<int> coefficients;
-    
+    std::vector<int> coefficients;    
     for (size_t i = 0; i < hyper_metric.b.size(); ++i)
     {
         {
@@ -119,12 +123,17 @@ Inequality<int> hyper_metric_to_inequality(const HyperMetric& hyper_metric)
             }
         }
     }
-
     return {edges, coefficients, hyper_metric.rhs, hyper_metric.violation};
 }
 
 
-
+/**
+ * Class for separating hyper metric inequalities.
+ * Violated inequalities are found by kernighan lin based local search:
+ *  - initially, parameters b of the inequality are zero
+ *  - then parameters and pairs of parameters are increased and decreased in order
+ *      to increase the violation (depth)
+ */
 template<class EDGE_VALUE_MAP>
 class HyperMetricSeparator : public AbstractSeparator<int, EDGE_VALUE_MAP> 
 {
@@ -142,10 +151,12 @@ public:
         return "HyperMetric";
     }
 
+    // find violated hyper metric inequalities
     std::vector<Inequality<int>> separate_(const EDGE_VALUE_MAP& edge_values)
     {
         std::vector<HyperMetric> hyper_metrics = separate_hyper_metric(edge_values);
         std::vector<Inequality<int>> inequalities(hyper_metrics.size());
+        // convert parameters of hyper metric inequalities to actual inequalities
         for (size_t i = 0; i < hyper_metrics.size(); ++i)
         {
             assert (std::abs(hyper_metrics[i].violation - hyper_metrics[i].compute_violation(edge_values)) < 1e-3);
@@ -157,6 +168,7 @@ public:
         return inequalities;
     }
 
+    // find parameters of violated hyper metric inequalities
     std::vector<HyperMetric> separate_hyper_metric(const EDGE_VALUE_MAP& edge_values)
     {
         std::vector<HyperMetric> hyper_metrics;
@@ -173,6 +185,7 @@ public:
         return hyper_metrics;
     }
 
+    // apply the kernighan lin based local search to the starting parameters b_i = 0 for all u != i != v and b_u = b_v = 1
     void add_hyper_metric(size_t u, size_t v, const EDGE_VALUE_MAP& edge_values, std::vector<HyperMetric>& hyper_metrics)
     {
         size_t n = edge_values.n();
@@ -267,6 +280,8 @@ public:
             return std::pair<int, int>{new_sum_of_squares, new_sum_of_square_squares};
         };
 
+
+        // compute the change in violation depths if changes are applied
         auto get_depth_change = [&] (const std::vector<std::pair<size_t, int>>& change)
         {
             double violation_change = get_violation_change(change);
@@ -281,6 +296,7 @@ public:
             return depth_change;
         };
 
+        // change the parameters of the inequality
         auto make_change = [&] (const std::vector<std::pair<size_t, int>>& change)
         {
             double lhs_change = get_lhs_change(change);
@@ -387,7 +403,7 @@ public:
         // increasing one node value while simultaneously
         // decreasing another node value.
 
-        // Changing individual bi
+        // Changing individual b_i
         bool improvement = true;
         while (improvement)
         {
@@ -449,6 +465,7 @@ public:
         std::copy(best_delta_.begin(), best_delta_.end(), delta_.begin());
         non_zeros = best_non_zeros;
 
+        // Changing pairs of b_i, b_j
         improvement = true;
         while (improvement)
         {

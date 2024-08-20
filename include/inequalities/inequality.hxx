@@ -13,7 +13,16 @@
 
 namespace CP {
 
-
+/**
+ * Class for representing an inequality.
+ * The inequality is represented by a vector of edges and a vector of coefficients of equal size.
+ * Edges that are not contained in the vector of edges are assumed to have coefficient 0.
+ * This allows for a sparse representation of an inequality instead of storing many 0 coefficients.
+ * This class also implements some helper functions like evaluating the inequality wrt to
+ * some given edge values or computing the dot product of coefficients of two inequalities.
+ * The edges and coefficients are always sorted lexicographically in order to make it easier
+ * to compare two different inequalities.
+ */
 template<class C = int>
 class Inequality 
 {
@@ -74,6 +83,8 @@ public:
     const double& euclidean() const {return euclidean_;}
     const double& violation_depth() const {return violation_depth_;}
 
+    // evaluate the dot product of the coefficients of the inequality and
+    // the given edge values
     template<class EDGE_VALUE_MAP>
     double evaluate(const EDGE_VALUE_MAP& edge_values) const
     {
@@ -85,6 +96,7 @@ public:
         return value;
     }
 
+    // print the inequality to the console
     void print() const
     {
         for (size_t i = 0; i < edges_.size(); ++i)
@@ -94,6 +106,7 @@ public:
         std::cout << " <= " << rhs_ << "\n";
     }
 
+    // compute the dot product of the coefficients of this inequality with the coefficients of another inequality
     C dot_product(const Inequality<C>& other) const
     {
         C dot = 0;

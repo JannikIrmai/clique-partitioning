@@ -34,6 +34,7 @@ public:
     
     std::string name() { return "OddWheel"; }
 
+    // find violated wheel inequalities
     std::vector<Inequality<int>> separate_(const EDGE_VALUE_MAP& edge_values)
     {
         std::vector<Wheel> wheels = separate_wheel(edge_values);

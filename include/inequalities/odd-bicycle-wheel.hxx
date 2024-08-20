@@ -23,6 +23,9 @@ struct BicycleWheel
 };
 
 
+/**
+ * Class that implements separation algorithm for bicycle wheel inequalities.
+ */
 template<class EDGE_VALUE_MAP>
 class OddBicycleWheelSeparator : public AbstractSeparator<int, EDGE_VALUE_MAP> 
 {
@@ -35,6 +38,7 @@ public:
     
     std::string name() { return "OddBicycleWheel"; }
 
+    // find violated bicycle wheel inequalities
     std::vector<Inequality<int>> separate_(const EDGE_VALUE_MAP& edge_values)
     {
         std::vector<BicycleWheel> wheels = separate_bicycle_wheel(edge_values);
