@@ -1,5 +1,10 @@
 # A cutting plane algorithm for the clique partitioning problem
 
+This repository contains the source code to the paper 
+
+
+> Irmai and Andres: A State-of-the-Art Cutting Plane Algorithm for Clique Partitioning. GCPR (2024)
+
 ![example](cpp-example.png)
 
 ## Requirements
