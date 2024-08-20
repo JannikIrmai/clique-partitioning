@@ -129,7 +129,7 @@ public:
                 max_size = size;
             inequalities[i] = two_partition_to_inequality(two_partitions[i]);
         }
-        this->sort_and_reduce_by_euclidean_violation(inequalities);
+        this->sort_and_reduce_by_violation_depth(inequalities);
         this->reduce_by_parallelism(inequalities);
         return inequalities;
     }

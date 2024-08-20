@@ -51,7 +51,7 @@ public:
             }
             inequalities[i] = {edges, coefficients, (int)wheels[i].wheel.size() / 2, wheels[i].violation};
         }
-        this->sort_and_reduce_by_euclidean_violation(inequalities);
+        this->sort_and_reduce_by_violation_depth(inequalities);
         this->reduce_by_parallelism(inequalities);
         return inequalities;
     }

@@ -135,7 +135,7 @@ public:
             inequalities.push_back({edges, coefficients, (int)edges.size() / 4, violation});
         }
 
-        this->sort_and_reduce_by_euclidean_violation(inequalities);
+        this->sort_and_reduce_by_violation_depth(inequalities);
         this->reduce_by_parallelism(inequalities);
         return inequalities;
     }

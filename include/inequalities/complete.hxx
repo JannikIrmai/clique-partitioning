@@ -239,7 +239,7 @@ public:
         // iterate over all choices of k nodes
         iterate_(choice, 0, inequalities, edge_values);
 
-        this->sort_and_reduce_by_euclidean_violation(inequalities);
+        this->sort_and_reduce_by_violation_depth(inequalities);
         this->reduce_by_parallelism(inequalities);
 
         return inequalities;

@@ -105,7 +105,7 @@ public :
             inequalities[idx] = {{{t[0], t[1]}, {t[0], t[2]}, {t[1], t[2]}}, {1, 1, -1}, 1, triangle.violation};
             ++idx;
         }
-        this->sort_and_reduce_by_euclidean_violation(inequalities);
+        this->sort_and_reduce_by_violation_depth(inequalities);
         return inequalities;
     }
 };

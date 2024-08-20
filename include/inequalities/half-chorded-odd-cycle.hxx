@@ -18,7 +18,12 @@ struct Cycle
     double violation;
 };
 
-
+/**
+ * Class for separating half-chorded odd cycle inequalities.
+ * Violated inequalities are found by searching for shortest paths in 
+ * an auxiliary directed bipartite graph.
+ * This algorithm is very similar to that for separating {0,1/2}-Chvatal-Gomory cuts.
+ */
 template<class EDGE_VALUE_MAP>
 class HalfChordedOddCycleSeparator : public AbstractSeparator<int, EDGE_VALUE_MAP> 
 {
@@ -33,7 +38,9 @@ public:
 
     std::vector<Inequality<int>> separate_(const EDGE_VALUE_MAP& edge_values)
     {
+        // find cycles corresponding to violated half-chorded odd cycle inequalities
         std::vector<Cycle> cycles = separate_cycles(edge_values);
+        // get associated inequalities
         std::vector<Inequality<int>> inequalities(cycles.size());
         for (size_t i = 0; i < cycles.size(); ++i)
         {
@@ -48,7 +55,7 @@ public:
             }
             inequalities[i] = {edges, coefficients, (int)cycles[i].cycle.size() - 3, cycles[i].violation};
         }
-        this->sort_and_reduce_by_euclidean_violation(inequalities);
+        this->sort_and_reduce_by_violation_depth(inequalities);
         this->reduce_by_parallelism(inequalities);
         return inequalities;
     }

@@ -27,8 +27,8 @@ void test_hyper_metric_separation()
     {
         test (std::abs(h.violation - 1.0/3) < 1e-6);
         test (std::abs(h.compute_violation(ecm) - 1.0/3) < 1e-6);
-        test (std::abs(h.euclidean_violation - (1.0/3) / std::sqrt(22) ) < 1e-6);
-        test (std::abs(h.compute_euclidean_violation() - (1.0/3) / std::sqrt(22) ) < 1e-6);
+        test (std::abs(h.violation_depth - (1.0/3) / std::sqrt(22) ) < 1e-6);
+        test (std::abs(h.compute_violation_depth() - (1.0/3) / std::sqrt(22) ) < 1e-6);
         test (h.b.size() == 5);
         test (h.b[0] == -2);
         test (h.b[1] == 1);

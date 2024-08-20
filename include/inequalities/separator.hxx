@@ -47,25 +47,25 @@ protected:
     double total_time_ = 0;  // total separation time over all iterations
 
     double min_violation_ = 0.01;  // only inequalities whose violation is greater than this value are separated
-    double min_euclidean_violation_ = 0.002;  // only inequalities whose euclidean violation is greater than this value are separated
-    double min_relative_euclidean_violation_ = 0.5;  // only inequalities whose euclidean violation is greater than this value times the greatest euclidean violation of all violated inequalities are separated
+    double min_violation_depth_ = 0.002;  // only inequalities whose violation depth is greater than this value are separated
+    double min_relative_violation_depth_ = 0.5;  // only inequalities whose violation depth is greater than this value times the greatest violation depth of all violated inequalities are separated
     double max_parallel_ = 0.5;  // for two inequalities that are more parallel than this coefficient, only one is separated
 
     virtual INEQUALITIES separate_(const EDGE_VALUE_MAP& edge_values) = 0;
 
-    void sort_and_reduce_by_euclidean_violation(INEQUALITIES& inequalities) const
+    void sort_and_reduce_by_violation_depth(INEQUALITIES& inequalities) const
     {
         if (inequalities.size() == 0)
             return;
     
-        // sort by euclidean violation
+        // sort by violation depth
         std::stable_sort(inequalities.begin(), inequalities.end(),
-            [&inequalities](const INEQUALITY& i1, const INEQUALITY& i2) {return i1.euclidean_violation() > i2.euclidean_violation();});
-        // remove inequalities if their euclidean violation is less than 0.002 or if it is less than half of the largest euclidean violation
-        double threshold = std::max(min_relative_euclidean_violation_*inequalities[0].euclidean_violation(), min_euclidean_violation_);
+            [&inequalities](const INEQUALITY& i1, const INEQUALITY& i2) {return i1.violation_depth() > i2.violation_depth();});
+        // remove inequalities if their violation depth is less than 0.002 or if it is less than half of the largest violation depth
+        double threshold = std::max(min_relative_violation_depth_*inequalities[0].violation_depth(), min_violation_depth_);
         for (size_t i = 0; i < inequalities.size(); ++i)
         {
-            if (i >= max_num_ || inequalities[i].euclidean_violation() < threshold)
+            if (i >= max_num_ || inequalities[i].violation_depth() < threshold)
             {
                 inequalities.resize(i);
                 break;
@@ -102,9 +102,9 @@ protected:
         if (inequalities.size() == 0)
             return;
     
-        // sort by euclidean violation
+        // sort by violation depth
         std::stable_sort(inequalities.begin(), inequalities.end(),
-            [&inequalities](const INEQUALITY& i1, const INEQUALITY& i2) {return i1.euclidean_violation() > i2.euclidean_violation();});
+            [&inequalities](const INEQUALITY& i1, const INEQUALITY& i2) {return i1.violation_depth() > i2.violation_depth();});
 
         std::vector<std::vector<size_t>> covered(n_, std::vector<size_t>(n_, 0));
         std::vector<INEQUALITY> selected_inequalities;

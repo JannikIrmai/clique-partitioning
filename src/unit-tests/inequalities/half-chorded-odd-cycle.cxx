@@ -31,7 +31,7 @@ void test_half_chorded_odd_cycle()
     std::vector<CP::Inequality<int>> inequalities = separator.separate(edge_value_map);
     test (inequalities.size() == 1);
     test (inequalities[0].violation() == 0.5);
-    test (inequalities[0].euclidean_violation() == 0.5 / std::sqrt(10));
+    test (inequalities[0].violation_depth() == 0.5 / std::sqrt(10));
     test (inequalities[0].evaluate(edge_value_map) == 2.5);
 
 }

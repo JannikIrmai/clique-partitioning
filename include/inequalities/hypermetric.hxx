@@ -9,17 +9,17 @@
 
 namespace CP {
 
-
+// struct for representing the parameters of a hyper-metric inequality
 struct HyperMetric
 {
-    std::vector<int> b;
-    int rhs;
-    double violation;
+    std::vector<int> b;  // coefficients of the hyper metric inequality
+    int rhs;  // right hand side of the inequality
+    double violation;  // amount by which the inequality is violated
 
-    // values for computing euclidean violation
-    int sum_of_squares;
+    // values for computing violation depth
+    int sum_of_squares;  
     int sum_of_square_squares;
-    double euclidean_violation;
+    double violation_depth;
 
     void print()
     {
@@ -57,7 +57,7 @@ struct HyperMetric
         return rhs;
     }
 
-    double compute_euclidean_violation()
+    double compute_violation_depth()
     {
         sum_of_squares = 0;
         sum_of_square_squares = 0;
@@ -68,8 +68,8 @@ struct HyperMetric
             sum_of_square_squares += square * square;
         }
         double euclidean = std::sqrt((sum_of_squares * sum_of_squares - sum_of_square_squares) / 2);
-        euclidean_violation = violation / euclidean;
-        return euclidean_violation;
+        violation_depth = violation / euclidean;
+        return violation_depth;
     }
 
     bool operator<(const HyperMetric& other) const
@@ -152,7 +152,7 @@ public:
             inequalities[i] = hyper_metric_to_inequality(hyper_metrics[i]);
             assert (std::abs(hyper_metrics[i].violation - (inequalities[i].evaluate(edge_values) - inequalities[i].rhs())) < 1e-3);
         }
-        this->sort_and_reduce_by_euclidean_violation(inequalities);
+        this->sort_and_reduce_by_violation_depth(inequalities);
         this->reduce_by_parallelism(inequalities);
         return inequalities;
     }
@@ -187,7 +187,7 @@ public:
         h.sum_of_squares = 2;
         h.sum_of_square_squares = 2;
         h.violation = - edge_values(u, v);
-        h.euclidean_violation = h.violation;
+        h.violation_depth = h.violation;
 
         size_t non_zeros = 2;
         HyperMetric best_h = h;
@@ -277,7 +277,7 @@ public:
                 return -std::numeric_limits<double>::infinity();
             double new_euclidean = std::sqrt(new_squared_euclidean);
             double new_violation_depth = new_violation / new_euclidean;
-            double depth_change = new_violation_depth - h.euclidean_violation;
+            double depth_change = new_violation_depth - h.violation_depth;
             return depth_change;
         };
 
@@ -295,13 +295,13 @@ public:
             if (new_squared_euclidean == 0)
                 throw std::runtime_error("Changing b leads to b == 0!");
             double new_euclidean = std::sqrt(new_squared_euclidean);
-            h.euclidean_violation = h.violation / new_euclidean;
+            h.violation_depth = h.violation / new_euclidean;
             for (auto c : change)
                 h.b[c.first] += c.second;
 
             assert (h.rhs == h.compute_rhs());
             assert (std::abs(h.violation - h.compute_violation(edge_values)) < 1e-3 );
-            assert (std::abs(h.euclidean_violation - h.compute_euclidean_violation()) < 1e-3 );
+            assert (std::abs(h.violation_depth - h.compute_violation_depth()) < 1e-3 );
 
             // update delta
             for (size_t i = 0; i < n; ++i)
@@ -364,7 +364,7 @@ public:
             make_change({{node, change}});
             change_direction[node] = change;
             // check if new hyper-metric is best
-            if (h.euclidean_violation > best_h.euclidean_violation + EPSILON)
+            if (h.violation_depth > best_h.violation_depth + EPSILON)
             {
                 best_h = h;
                 std::copy(delta_.begin(), delta_.end(), best_delta_.begin());
@@ -373,11 +373,11 @@ public:
         }
 
         assert (std::abs(best_h.violation - best_h.compute_violation(edge_values)) < 1e-3);
-        assert (std::abs(best_h.euclidean_violation - best_h.compute_euclidean_violation()) < 1e-3);
+        assert (std::abs(best_h.violation_depth - best_h.compute_violation_depth()) < 1e-3);
 
         if (best_h.violation > this->min_violation_)
             hyper_metrics.push_back(best_h);
-        double best_violation_depth_after_construction = best_h.euclidean_violation;
+        double best_violation_depth_after_construction = best_h.violation_depth;
         
         if (best_h.violation <= -0.5)
             return;
@@ -432,7 +432,7 @@ public:
                 change_direction[best_i] = best_change;
                 non_zeros += best_zero_change;
 
-                if (h.euclidean_violation > best_h.euclidean_violation + EPSILON)
+                if (h.violation_depth > best_h.violation_depth + EPSILON)
                 {
                     best_h = h;
                     std::copy(delta_.begin(), delta_.end(), best_delta_.begin());
@@ -474,7 +474,7 @@ public:
             }
         }
         
-        if (h.euclidean_violation > best_violation_depth_after_construction && h.violation > this->min_violation_)
+        if (h.violation_depth > best_violation_depth_after_construction && h.violation > this->min_violation_)
             hyper_metrics.push_back(h);
     }
 

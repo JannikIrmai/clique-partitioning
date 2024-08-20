@@ -34,7 +34,7 @@ public:
         for (C c : coefficients_)
             euclidean_ += c*c;
         euclidean_ = std::sqrt(euclidean_);
-        euclidean_violation_ = violation_ / euclidean_;
+        violation_depth_ = violation_ / euclidean_;
 
         // ensure that source id of edge is smaller than target id
         for (auto& edge : edges_)
@@ -72,7 +72,7 @@ public:
     const C& rhs() const {return rhs_;}
     const double& violation() const {return violation_;}
     const double& euclidean() const {return euclidean_;}
-    const double& euclidean_violation() const {return euclidean_violation_;}
+    const double& violation_depth() const {return violation_depth_;}
 
     template<class EDGE_VALUE_MAP>
     double evaluate(const EDGE_VALUE_MAP& edge_values) const
@@ -130,7 +130,7 @@ private:
 
     double violation_;  // amount by which inequality is violated
     double euclidean_; // euclidean distance of inequality
-    double euclidean_violation_; // violation normalized by euclidean distance of inequality
+    double violation_depth_; // violation normalized by euclidean distance of inequality
 
 };
 
