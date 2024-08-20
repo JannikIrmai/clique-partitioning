@@ -9,7 +9,7 @@
 
 namespace CP {
 
-
+// Struct for storing the two sets S and T that represent a two partition inequality
 struct TwoPartition
 {
     std::vector<size_t> s;
@@ -52,9 +52,7 @@ struct TwoPartition
 
 };
 
-
-
-
+// Compute a two partition inequality from the two sets S and T
 Inequality<int> two_partition_to_inequality(const TwoPartition& two_partition)
 {
     // compute the number of non-zero coefficients in the inequality
@@ -97,8 +95,9 @@ Inequality<int> two_partition_to_inequality(const TwoPartition& two_partition)
     return {edges, coefficients, (int)std::min(two_partition.s.size(), two_partition.t.size()), two_partition.violation};
 }
 
-/// separation heuristic by Sorensen (2020)
-
+/**
+ * This class implements the separation heuristic of Sorensen (2020)
+ */
 template<class EDGE_VALUE_MAP>
 class TwoPartitionSeparator : public AbstractSeparator<int, EDGE_VALUE_MAP> 
 {

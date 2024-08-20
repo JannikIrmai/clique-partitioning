@@ -10,7 +10,12 @@
 namespace CP 
 {
 
-// round fractional solution with kernighan lin based greedy moving algorithm
+/** 
+ * Round fractional solution with kernighan lin based greedy moving (klgm) algorithm.
+ * This method applies the klgm algorithm several times initialized with different initial solutions.
+ * The initial solutions are computed by computed connected components of the graph that is obtained
+ * by thresholding the edge values.
+ */
 template<class EDGE_VALUE_MAP, class EDGE_COST_MAP>
 typename EDGE_COST_MAP::VALUE_TYPE round_kl(
     const EDGE_VALUE_MAP& edge_values, 

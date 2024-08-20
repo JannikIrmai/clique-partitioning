@@ -8,6 +8,11 @@
 namespace CP 
 {
 
+/**
+ * This class implements a data structure for storing properties of edges of a complete graph with n node.
+ * The properties are stored in a continuous vector of length n*(n-1)/2.
+ * The operator() allows read and write access of these elements.
+ */
 template<typename T>
 class EdgePropertyMap
 {
@@ -63,7 +68,5 @@ private:
     }
 
 };
-
-
 
 } // namespace CP

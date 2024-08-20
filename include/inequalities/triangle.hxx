@@ -12,6 +12,9 @@
 
 namespace CP {
 
+/**
+ * This class implements an algorithm for separating triangle inequalities
+ */
 template<class EDGE_VALUE_MAP>
 class TriangleSeparator : public AbstractSeparator<int, EDGE_VALUE_MAP>
 {
@@ -20,6 +23,10 @@ public :
 
     std::string name() { return "Triangle"; }
 
+    /**  
+     * Compute violated triangle inequalities.
+     * For each edge at most one triangle containing that edge is returned.
+     */
     std::vector<Inequality<int>> separate_(const EDGE_VALUE_MAP& edge_values)
     {
         size_t n = edge_values.n();
@@ -87,6 +94,7 @@ public :
             }
         }
 
+        // compute the set of unique violated triangle inequalities
         std::set<Triangle> triangles;
         for (size_t i = 0; i < n; ++i)
         for (size_t j = i+1; j < n; ++j)
@@ -97,6 +105,7 @@ public :
                 triangles.insert(edge2triangle[j][i]);
         }
 
+        // convert triangle to inequalities
         std::vector<Inequality<int>> inequalities(triangles.size());
         size_t idx = 0;
         for (const Triangle& triangle : triangles)
