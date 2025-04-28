@@ -2,8 +2,7 @@
 
 This repository contains the source code to the paper 
 
-
-> Irmai and Andres: A State-of-the-Art Cutting Plane Algorithm for Clique Partitioning. GCPR (2024)
+[Irmai and Andres: A State-of-the-Art Cutting Plane Algorithm for Clique Partitioning. GCPR (2024)](https://link.springer.com/chapter/10.1007/978-3-031-85181-0_2)
 
 ![example](cpp-example.png)
 
